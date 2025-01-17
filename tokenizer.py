@@ -9,10 +9,16 @@ def word_tokenizer(inp: str) -> list[list[str]]:
     :return:
     """
     nlp = English()
-    nlp.add_pipe("sentencizer")
-    tokenized_text = nlp(inp)
+    if not nlp.has_pipe("sentencizer"):
+        nlp.add_pipe("sentencizer")
 
-    return [[token.text for token in sent] for sent in tokenized_text.sents]
+    doc = nlp(inp)
+
+    tokenized_sentences = []
+    for sent in doc.sents:
+        tokenized_sentences.append([token.text for token in sent if token.text.strip()])
+
+    return tokenized_sentences
 
 
 def main():
