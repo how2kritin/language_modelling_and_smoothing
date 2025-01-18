@@ -1,10 +1,9 @@
 # Ref: https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
 
 from typing import Literal
-from collections import defaultdict, Counter
+from collections import defaultdict
 from tokenizer import word_tokenizer
 import argparse
-from os.path import exists
 
 class NGramModel:
     def __init__(self, N: int, smoothing_type: Literal['none', 'laplace', 'good-turing', 'linear_interpolation'] = "None"):
