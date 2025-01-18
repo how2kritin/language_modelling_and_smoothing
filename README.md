@@ -42,7 +42,7 @@ Essentially, we pretend that we saw every word once more than we actually did.
 
 $$P_{GT}(w_1...w_n) = \frac{r^*}{N}$$
 where:
-$$r^* = \frac{(r + 1)S(r + 1)}{S(r)}$$
+$$r^* = \frac{(r + 1)S(N_{r + 1})}{S(N_r)}$$
 Here, $S(\cdot)$ is the smoothed function. For small values of $r$, $S(N_r) = N_r$ is a reasonable assumption (no
 smoothing is performed). However, for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
 the logarithmic relationship $$log(N_r) = a + blog(r)$$ where $N_r$ is the number of times $n$-grams of frequency $r$ have
