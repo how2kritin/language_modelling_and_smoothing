@@ -1,5 +1,5 @@
 # Ref: https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
-from math import log
+from math import log, exp
 from typing import Literal
 from collections import defaultdict
 import numpy as np
@@ -46,39 +46,71 @@ class NGramModel:
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
 
-    def _calculate_good_turing_r_star(self, r: int, small_r_threshold: int = 5) -> float:
+    def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 5) -> dict[int, float]:
+        """
+        To calculate smoothed Nr counts using the Church and Gale method (ref: Page 5 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
+        1. Calculate Zr values.
+        2. Fit linear regression line to log(Zr) vs log(r).
+        3. Use linear regression for large r, original Nr for small r.
+        :param small_r_threshold: 5 by default. This is the threshold below which values of 'r' are considered to be "small".
+        """
+        nonzero_counts = [(r, Nr) for r, Nr in sorted(self.freq_of_ngram_freq.items()) if Nr > 0]
+        Zr_values = {}
+
+        for i in range(len(nonzero_counts)):
+            r = nonzero_counts[i][0]
+            Nr = nonzero_counts[i][1]
+
+            if i == 0:  # for the first non-zero count
+                q = 0
+                t = nonzero_counts[i + 1][0]
+            elif i == len(nonzero_counts) - 1:  # for the last non-zero count (r_last)
+                q = nonzero_counts[i - 1][0]
+                Zr_values[r] = Nr / (r - q)
+                continue
+            else:  # for middle cases (usual situation)
+                q = nonzero_counts[i - 1][0]
+                t = nonzero_counts[i + 1][0]
+
+            Zr_values[r] = Nr / (0.5 * (t - q))
+
+        # fitting linear regression line to log-log plot
+        log_r = np.array([log(r) for r in Zr_values.keys()])
+        log_Zr = np.array([log(Zr) for Zr in Zr_values.values()])
+        a, b = np.polyfit(log_r, log_Zr, 1)
+
+        # finally, calculating the smoothed values.
+        smoothed_counts = {}
+        max_r = max(self.freq_of_ngram_freq.keys())
+
+        for r in range(1, max_r + 1):
+            if r <= small_r_threshold:
+                smoothed_counts[r] = self.freq_of_ngram_freq.get(r, 0)
+            else:
+                log_SNr = a + b * log(r)
+                smoothed_counts[r] = exp(log_SNr)
+
+        return defaultdict(float, smoothed_counts)
+
+    def _calculate_good_turing_r_star(self, r: int) -> float:
         """
         To calculate the r* value for Good-Turing smoothing.
         :param r:
-        :param small_r_threshold: 5 by default. This is the threshold below which values of 'r' are considered to be "small".
         :return:
         """
         if r == 0:
-            return 0  # unseen events are handled separately.
+            return 0
 
-        # for small values of r, do not perform any smoothing.
-        if r < small_r_threshold:
-            Nr = self.freq_of_ngram_freq.get(r, 0)
-            Nr_plus_1 = self.freq_of_ngram_freq.get(r + 1, 0)
-            if Nr == 0:
-                return r  # fallback to original count if no frequency data
-            return ((r + 1) * Nr_plus_1) / Nr
+        if not hasattr(self, '_smoothed_Nr'):
+            self._smoothed_Nr = self._calculate_smoothed_Nr_counts()
 
-        # for large values of r, perform linear regression on the log relationship line log(Nr) = a + blog(r) to get S(r).
-        # collecting points for regression here
-        points = [(log(r), log(Nr)) for r, Nr in self.freq_of_ngram_freq.items() if Nr > 0]
-        if len(points) < 2:
-            return self.freq_of_ngram_freq.get(r, 0)  # fallback if regression fails
+        S_Nr = self._smoothed_Nr[r]
+        S_Nr_plus_1 = self._smoothed_Nr[r + 1]
 
-        x = np.array([p[0] for p in points])
-        y = np.array([p[1] for p in points])
+        if S_Nr == 0:  # fallback, but should never trigger this.
+            return r
 
-        # performing linear regression here on the log line
-        a, b = np.polyfit(x, y, 1)
-        S_r = np.exp(a + b * log(r))
-        S_r_plus_1 = np.exp(a + b * log(r + 1))
-
-        return ((r + 1) * S_r_plus_1) / S_r
+        return ((r + 1) * S_Nr_plus_1) / S_Nr
 
     def _calculate_probability(self, ngram: tuple[str, ...], context: tuple[str, ...]) -> float:
         """
@@ -100,13 +132,24 @@ class NGramModel:
 
         elif self.smoothing_type == 'good-turing':
             if ngram_count == 0:
-                # using N1/N for unseen n-grams
-                N1 = self.freq_of_ngram_freq.get(1, 0)
-                return N1 / self.total_ngrams
+                return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
 
-            # calculate r* using Good-Turing formula, and use that here.
-            r_star = self._calculate_good_turing_r_star(ngram_count)
-            return r_star / self.total_ngrams
+
+            # as we are using Turing estimate for small r values and Good-Turing estimate for large r values, we need to renormalize them (ref: Page 8 and 9 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
+            # get unnormalized probability using r*
+            p_unnorm = self._calculate_good_turing_r_star(ngram_count) / self.total_ngrams
+
+            # calculate sum of unnormalized probabilities for all possible continuations
+            sum_p_unnorm = 0
+            for possible_ngram in self.ngrams:
+                if possible_ngram[:-1] == context:  # same context
+                    r = self.ngrams[possible_ngram]
+                    if r >= 1:
+                        sum_p_unnorm += self._calculate_good_turing_r_star(r) / self.total_ngrams
+
+            # apply renormalization formula
+            N1 = self.freq_of_ngram_freq.get(1, 0)
+            return (1 - N1/self.total_ngrams) * (p_unnorm / sum_p_unnorm)
 
         return 0.0  # will reach here only for an unimplemented smoothing_type passed during initialization of an object of this class.
 
