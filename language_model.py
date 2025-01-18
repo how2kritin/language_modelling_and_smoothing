@@ -134,7 +134,6 @@ class NGramModel:
             if ngram_count == 0:
                 return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
 
-
             # as we are using Turing estimate for small r values and Good-Turing estimate for large r values, we need to renormalize them (ref: Page 8 and 9 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
             # get unnormalized probability using r*
             p_unnorm = self._calculate_good_turing_r_star(ngram_count) / self.total_ngrams
