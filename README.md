@@ -35,30 +35,41 @@ If none of these are chosen and something else entirely is given, then it defaul
 `<N>` is the N-gram size, and `<corpus_path>` is the path to the corpus.
 
 ### Laplace Smoothing
-\
-$$P(w|h) = \frac{c(w,h) + 1}{c(h) + V}$$ where V is the total vocabulary size (assumed known).
+
+$$P(w|h) = \frac{c(w,h) + 1}{c(h) + V}$$ 
+
+where V is the total vocabulary size (assumed known).
 
 Essentially, we pretend that we saw every word once more than we actually did.
 
 ### Good-Turing Smoothing
-\
+
 $$P_{GT}(w_1...w_n) = \frac{r^*}{N}$$
-where:\
+
+where:
+
 $$r^* = \frac{(r + 1)S(N_{r + 1})}{S(N_r)}$$
+
 Here, $S(\cdot)$ is the smoothed function. For small values of $r$, $S(N_r) = N_r$ is a reasonable assumption (no
 smoothing is performed). However, for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
-the logarithmic relationship\
-$$log(N_r) = a + blog(r)$$ where $N_r$ is the number of times $n$-grams of frequency $r$
+the logarithmic relationship
+
+$$log(N_r) = a + blog(r)$$
+
+where $N_r$ is the number of times $n$-grams of frequency $r$
 have occurred.
 
 However, this plot of $log(N_r)$ versus $log(r)$ is problematic because for large $r$, many $N_r$ will be zero. Instead,
-we plot a revised quantity, $log(Z_r)$ versus $log(r)$, where $Z_r$ is defined as\
+we plot a revised quantity, $log(Z_r)$ versus $log(r)$, where $Z_r$ is defined as
+
 $$Z_r = \frac{N_r}{\frac{1}{2}(t - q)}$$
+
 and where $q$, $r$ and $t$ are three consecutive subscripts with non-zero counts $N_q$, $N_r$, $N_t$. For the special
 case where $r$ is 1, we take $q = 0$. In the opposite special case, when $r = r_{last}$ is the index of the _last_
 non-zero count, replace the divisor $\frac{1}{2}(t-q)$ with $r_{last}-q$.
 
-**For unseen events:**\
+**For unseen events:**
+
 $$P_{GT}(w_1...w_n) = \frac{N_1}{N}$$
 
 Here, we are using the _Turing_ estimate for small $r$ values, and the _Good-Turing_ estimate for large $r$ values.
