@@ -13,7 +13,7 @@ def word_tokenizer(inp: str) -> list[list[str]]:
         nlp.max_length = 2000000
         nlp.add_pipe("sentencizer")
 
-    doc = nlp(inp)
+    doc = nlp(inp, disable=['ner', 'parser'])
 
     tokenized_sentences = []
     for sent in doc.sents:
