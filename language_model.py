@@ -3,6 +3,8 @@
 from typing import Literal
 from collections import defaultdict, Counter
 from tokenizer import word_tokenizer
+import argparse
+from os.path import exists
 
 class NGramModel:
     def __init__(self, N: int, smoothing_type: Literal['none', 'laplace', 'good-turing', 'linear_interpolation'] = "None"):
@@ -75,15 +77,33 @@ class NGramModel:
 
 
 
-def main():
-    ngm = NGramModel(N=2)
-    text = """The quick brown fox jumps over the lazy dog. 
-              The fox is quick and brown. 
-              The dog is lazy but happy."""
-    ngm.train(text)
-    print(ngm.predict_next_word(sentence="The", n_next_words=3))
-    print(ngm.calculate_probability_of_sentence(sentence="The dog is lazy dog."))
+def main(N: int, lm_type: str, corpus_path: str) -> None:
+    match lm_type:
+        case 'l':
+            smoothing_type = 'laplace'
+        case 'g':
+            smoothing_type = 'good-turing'
+        case 'i':
+            smoothing_type = 'linear_interpolation'
+        case _:
+            smoothing_type = 'none'
+    ngm = NGramModel(N=N, smoothing_type=smoothing_type)
+
+    try:
+        with open(corpus_path, "r") as file:
+            text = file.read()
+        ngm.train(text)
+    except FileNotFoundError:
+        raise FileNotFoundError("Unable to find a file at that path to use as the corpus!")
+
+    input_sentence = str(input('input sentence: '))
+    print('score: ', ngm.calculate_probability_of_sentence(sentence=input_sentence))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('N', type=int)
+    parser.add_argument('lm_type', type=str)
+    parser.add_argument('corpus_path', type=str)
+    args = parser.parse_args()
+    main(args.N, args.lm_type, args.corpus_path)

@@ -10,6 +10,7 @@ def word_tokenizer(inp: str) -> list[list[str]]:
     """
     nlp = English()
     if not nlp.has_pipe("sentencizer"):
+        nlp.max_length = 2000000
         nlp.add_pipe("sentencizer")
 
     doc = nlp(inp)
@@ -21,7 +22,7 @@ def word_tokenizer(inp: str) -> list[list[str]]:
     return tokenized_sentences
 
 
-def main():
+def main() -> None:
     inp_sentence = str(input("your text: "))
     token_list = word_tokenizer(inp_sentence)
     print("tokenized text: ", token_list)
