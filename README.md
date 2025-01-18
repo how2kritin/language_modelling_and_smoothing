@@ -78,7 +78,7 @@ them to add to one. In this condition, our estimates are called _unnormalized_. 
 probability estimates add to one by dividing by the total of the _unnormalized_ estimates. This is called
 _renormalization_.
 
-$$P_{SGT} = (1 - \frac{N_1}{N}) \frac{P^{unnorm}_r}{\sum\limits_{r=1}P^{unnorm}_r} \hspace{5mm}r \geq 1$$
+$$P_{SGT} = (1 - \frac{N_1}{N}) \frac{P^{unnorm}_r}{\sum P^{unnorm}_r} \hspace{5mm}r \geq 1$$
 
 This renormalized estimate is the _Simple Good-Turing_ (SGT) smoothing estimate. This is what we will be using here.
 
