@@ -2,7 +2,7 @@
 # 1. https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
 # 2. https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf
 # 3. https://aclanthology.org/A00-1031.pdf
-
+import string
 from math import log, exp
 from typing import Literal
 from collections import defaultdict
@@ -58,6 +58,7 @@ class NGramModel:
         2. Fit linear regression line to log(Zr) vs log(r).
         3. Use linear regression for large r, original Nr for small r.
         :param small_r_threshold: 5 by default. This is the threshold below which values of 'r' are considered to be "small".
+        :return:
         """
         nonzero_counts = [(r, Nr) for r, Nr in sorted(self.freq_of_ngram_freq.items()) if Nr > 0]
         Zr_values = {}
@@ -125,8 +126,6 @@ class NGramModel:
         :return:
         """
         ngram_count = self.ngrams.get(ngram, 0)
-
-        # for n-grams where n > 1
         context_count = self.context_counts.get(context, 0)
 
         if self.smoothing_type == 'none':
@@ -161,14 +160,14 @@ class NGramModel:
             N1 = self.freq_of_ngram_freq.get(1, 0)
             return (1 - N1 / self.total_ngrams) * (p_unnorm / sum_p_unnorm)
 
-    def predict_next_word(self, sentence: str, n_next_words: int) -> dict:
+    def predict_next_word(self, sentence: list[str], n_candidates_for_next_word: int) -> dict:
         """
         Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
-        :param sentence: Sentence for which next word is supposed to be predicted.
-        :param n_next_words: Number of possible candidates for the next word, to predict.
+        :param sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
+        :param n_candidates_for_next_word: Number of possible candidates for the next word, to predict.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0]
+        tokens = ['<s>'] * (self.n - 1) + sentence
         context = tuple(tokens[-(self.n - 1):])
 
         predictions = {}
@@ -178,16 +177,17 @@ class NGramModel:
                 predictions[ngram[-1]] = probability
 
         # return the top n_next_words after sorting them by decreasing order of probabilities.
-        sorted_predictions = dict(sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_next_words])
+        sorted_predictions = dict(
+            sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_candidates_for_next_word])
         return sorted_predictions
 
-    def calculate_probability_of_sentence(self, sentence: str) -> float:
+    def calculate_probability_of_sentence(self, sentence: list[str]) -> float:
         """
         Given a sentence, calculate the probability of that sentence occurring.
-        :param sentence:
+        :param sentence: Tokenized input sentence (list of str) to calculate probability for.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0] + ['</s>']
+        tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
         probability = 1.0
 
         for i in range(len(tokens) - self.n + 1):
@@ -196,6 +196,30 @@ class NGramModel:
             probability *= self._calculate_probability(ngram, context)
 
         return probability
+
+    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> str:
+        """
+        Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
+        :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
+        :param n: Number of next words to predict.
+        :return:
+        """
+        for _ in range(n):
+            next_words_list = list(self.predict_next_word(sentence, 1).keys())
+            if not next_words_list: # if there is no word that can come next as this context hasn't been seen before
+                break
+            next_word = next_words_list[0]
+
+            # stop if we hit the end of sentence token
+            if next_word == '</s>':
+                break
+
+            if next_word not in string.punctuation and next_word not in {'<s>', '</s>'}:
+                sentence += " " + next_word
+            else:
+                sentence += next_word
+
+        return sentence
 
 
 class LinearInterpolationOfNGramModels:
@@ -302,23 +326,23 @@ class LinearInterpolationOfNGramModels:
 
         return probability
 
-    def predict_next_word(self, sentence: str, n_next_words: int) -> dict:
+    def predict_next_word(self, sentence: list[str], n_candidates_for_next_word: int) -> dict:
         """
         Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
-        :param sentence: Sentence for which next word is supposed to be predicted.
-        :param n_next_words: Number of possible candidates for the next word, to predict.
+        :param sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
+        :param n_candidates_for_next_word: Number of possible candidates for the next word, to predict.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0]
+        tokens = ['<s>'] * (self.n - 1) + sentence
         context = tuple(tokens[-(self.n - 1):])
 
         # collect all possible next words from all n-gram models
         predictions = defaultdict(float)
         for k in range(1, self.n + 1):
-            sub_context = context[-(k-1):] if k > 1 else tuple()
-            
+            sub_context = context[-(k - 1):] if k > 1 else tuple()
+
             # look through all n-grams of order k
-            for ngram in self.ngram_models[k-1].ngrams:
+            for ngram in self.ngram_models[k - 1].ngrams:
                 if len(ngram) == k and ngram[:-1] == sub_context:
                     next_word = ngram[-1]
 
@@ -327,25 +351,49 @@ class LinearInterpolationOfNGramModels:
                     predictions[next_word] = self._calculate_probability(full_ngram)
 
         # return the top n_next_words after sorting them by decreasing order of probabilities.
-        sorted_predictions = dict(sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_next_words])
+        sorted_predictions = dict(
+            sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_candidates_for_next_word])
         return sorted_predictions
 
-    def calculate_probability_of_sentence(self, sentence: str) -> float:
+    def calculate_probability_of_sentence(self, sentence: list[str]) -> float:
         """
         Given a sentence, calculate the probability of that sentence occurring.
-        :param sentence: Input sentence to calculate probability for.
+        :param sentence: Tokenized input sentence (list of str) to calculate probability for.
         :return: Probability of the sentence.
         """
-        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0] + ['</s>']
+        tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
         probability = 1.0
 
         for i in range(len(tokens) - self.n + 1):
             ngram = tuple(tokens[i:i + self.n])
-            context = tuple(tokens[i:i + self.n - 1])
             prob = self._calculate_probability(ngram)
             probability *= prob
 
         return probability
+
+    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> str:
+        """
+        Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
+        :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
+        :param n: Number of next words to predict.
+        :return:
+        """
+        for _ in range(n):
+            next_words_list = list(self.predict_next_word(sentence, 1).keys())
+            if not next_words_list: # if there is no word that can come next as this context hasn't been seen before
+                break
+            next_word = next_words_list[0]
+
+            # stop if we hit the end of sentence token
+            if next_word == '</s>':
+                break
+
+            if next_word not in string.punctuation and next_word not in {'<s>', '</s>'}:
+                sentence += " " + next_word
+            else:
+                sentence += next_word
+
+        return sentence
 
 
 def main(N: int, lm_type: str, corpus_path: str) -> None:
@@ -356,7 +404,7 @@ def main(N: int, lm_type: str, corpus_path: str) -> None:
             smoothing_type = 'good-turing'
         case 'i':
             smoothing_type = 'linear_interpolation'
-        case _:
+        case 'n':
             smoothing_type = 'none'
 
     try:
@@ -373,13 +421,13 @@ def main(N: int, lm_type: str, corpus_path: str) -> None:
 
     ngm.train(tokenized_sentences)
     input_sentence = str(input('input sentence: '))
-    print('score: ', ngm.calculate_probability_of_sentence(sentence=input_sentence))
+    print('score: ', ngm.calculate_probability_of_sentence(sentence=word_tokenizer(input_sentence)[0]))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('N', type=int)
-    parser.add_argument('lm_type', type=str)
+    parser.add_argument('lm_type', type=str, choices=['n', 'l', 'g', 'i'])
     parser.add_argument('corpus_path', type=str)
     args = parser.parse_args()
     main(args.N, args.lm_type, args.corpus_path)

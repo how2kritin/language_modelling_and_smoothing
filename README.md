@@ -30,8 +30,8 @@ Named Entity Recognition) and `parser` modules of `spaCy`. Feel free to enable t
 ## Instructions to run
 
 ```python3 language_model.py <N> <lm_type> <corpus_path>```  
-Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
-If none of these are chosen and something else entirely is given, then it defaults to no smoothing.  
+Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear
+Interpolation, 'n' for No Smoothing.  
 `<N>` is the $N$-gram size, and `<corpus_path>` is the path to the corpus.
 
 ## Different types of smoothing used, and their logic
@@ -58,7 +58,8 @@ and
 $$N = \sum rN_r$$
 
 Here, $S(\cdot)$ is the smoothed function. For small values of $r$, $S(N_r) = N_r$ is a reasonable assumption (no
-smoothing is performed). N is the total number of objects observed, i.e., it is the total number of $n$-grams. However, for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
+smoothing is performed). N is the total number of objects observed, i.e., it is the total number of $n$-grams. However,
+for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
 the logarithmic relationship
 
 $$log(N_r) = a + blog(r)$$
@@ -124,7 +125,8 @@ For each trigram t₁, t₂, t₃ with f(t₁, t₂, t₃) > 0:
 Normalize λ₁, λ₂, λ₃
 ```
 
-This idea can be easily extrapolated to any $n$-gram, by simply considering the $n$-gram probability distribution as being
+This idea can be easily extrapolated to any $n$-gram, by simply considering the $n$-gram probability distribution as
+being
 dependent on all the previous $i$-gram's Maximum Likelihood Estimates (MLEs) (where $1 \leq i \leq n$).
 
 ---
@@ -133,11 +135,15 @@ dependent on all the previous $i$-gram's Maximum Likelihood Estimates (MLEs) (wh
 
 ## Instructions to run
 
-```python3 generator.py <N> <lm_type> <corpus_path> <k>```  
-Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
-If none of these are chosen and something else entirely is given, then it defaults to no smoothing.  
-`<N>` is the $N$-gram size, `<corpus_path>` is the path to the corpus, and `<k>` is the number of candidates for the next
-word that are supposed to be printed.
+```python3 generator.py <N> <lm_type> <corpus_path> <k> <gen_type>```  
+Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear
+Interpolation, 'n' for No Smoothing.  
+`<N>` is the $N$-gram size, `<corpus_path>` is the path to the corpus, and `<gen_type>` must be one of `w` for Next Word
+generation (in which case, `<k>` is number of candidates for next word to be printed) or 's' for Sentence generation (in
+which case, `<k>` is number of next words to be generated in the sentence.)
+
+For sentence generation, the most probable word is chosen at each stage to form the sentence, until either `k` words
+are generated or the end of sentence token `<\s>` is generated.
 
 ---
 
