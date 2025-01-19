@@ -1,4 +1,8 @@
-# Ref: https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
+# Refs: 
+# 1. https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
+# 2. https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf
+# 3. https://aclanthology.org/A00-1031.pdf
+
 from math import log, exp
 from typing import Literal
 from collections import defaultdict
@@ -17,10 +21,12 @@ class NGramModel:
         self.n = N
         self.smoothing_type = smoothing_type
         self.ngrams = defaultdict(int)
+        self.total_tokens = 0  # Total number of tokens, needed for unigram case. Also acts as N for linear interpolation.
         self.context_counts = defaultdict(int)
         self.freq_of_ngram_freq = defaultdict(int)  # for Good-Turing smoothing (N_r counts)
         self.vocab_size = 0  # to compute V for Laplace smoothing
-        self.total_ngrams = 0  # to compute the total number of N-grams for Good-Turing smoothing (N value)
+        self.total_ngrams = 0  # to compute the total number of N-grams for Good-Turing smoothing (N value for Good-Turing)
+        self.lambdas = None  # for linear interpolation weights
 
     def train(self, inp_str: str) -> None:
         """
@@ -30,6 +36,7 @@ class NGramModel:
         """
         tokenized_sentences = word_tokenizer(inp_str)
         self.vocab_size = len(set(word for sentence in tokenized_sentences for word in sentence))
+        self.total_tokens = sum(len(sentence) for sentence in tokenized_sentences)  # N for linear interpolation
 
         for sentence in tokenized_sentences:
             # this <s> padding n-1 times at the start is so that the start of the sentence has enough context to calculate probabilities.
@@ -45,6 +52,64 @@ class NGramModel:
         if self.smoothing_type == 'good-turing':
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
+
+        # calculate linear interpolation weights for linear interpolation smoothing.
+        elif self.smoothing_type == 'linear_interpolation':
+            self._calculate_linear_interpolation_weights()
+
+    def _calculate_linear_interpolation_weights(self) -> None:
+        """
+        Calculate lambda weights for linear interpolation following the algorithm:
+        For each n-gram:
+            Compare the ratios:
+                (f(w_{i-n+1}...w_i) - 1) / (f(w_{i-n+1}...w_{i-1}) - 1)
+                (f(w_{i-n+2}...w_i) - 1) / (f(w_{i-n+2}...w_{i-1}) - 1)
+                ...
+                (f(w_i) - 1) / (N - 1)
+            Increment corresponding lambda based on which value is maximum
+        Normalize the lambdas to sum to 1.
+        Ref: Page 3 of https://aclanthology.org/A00-1031.pdf
+        """
+        self.lambdas = [0.0] * self.n  # Initialize all lambdas to 0
+        N = self.total_tokens  # total number of tokens in corpus
+
+        # for each observed n-gram
+        for ngram, count in self.ngrams.items():
+            if len(ngram) != self.n or count == 0:
+                continue
+
+            # calculate values to compare for each order k-gram
+            values = []
+
+            # for each k from n down to 1
+            for k in range(self.n):
+                sub_ngram = ngram[k:]  # Take last k+1 tokens
+                sub_context = sub_ngram[:-1]  # Take all but last token
+
+                if k == self.n - 1:  # unigram case
+                    if N > 1:
+                        values.append((count - 1) / (N - 1))
+                    else:
+                        values.append(0.0)
+                else:
+                    sub_count = self.ngrams.get(sub_ngram, 0)
+                    context_count = self.context_counts.get(sub_context, 0)
+                    if context_count > 1:  # need at least 2 occurrences for valid ratio
+                        values.append((sub_count - 1) / (context_count - 1))
+                    else:
+                        values.append(0.0)
+
+            # increment lambda corresponding to maximum value
+            max_index = values.index(max(values))
+            self.lambdas[max_index] += count
+
+        # normalize lambdas to sum to 1
+        total = sum(self.lambdas)
+        if total > 0:
+            self.lambdas = [l / total for l in self.lambdas]
+        else:
+            # just fallback to equal weights if no data (i.e., total of all lambdas came out to be 0 because each of them remained 0).
+            self.lambdas = [1.0 / self.n] * self.n
 
     def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 5) -> dict[int, float]:
         """
@@ -120,14 +185,20 @@ class NGramModel:
         :return:
         """
         ngram_count = self.ngrams.get(ngram, 0)
+
+        # for n-grams where n > 1
         context_count = self.context_counts.get(context, 0)
 
         if self.smoothing_type == 'none':
-            if context_count == 0:
-                return 0.0  # if the context has never occurred, then the probability is trivially 0.
+            if len(context) == 0:  # unigram case
+                return ngram_count / self.total_tokens
+            if context_count == 0:  # context hasn't been seen previously, so, probability of occurrence is trivially 0.
+                return 0.0
             return ngram_count / context_count
 
-        elif self.smoothing_type == 'laplace':  # also called "Add-One" smoothing.
+        elif self.smoothing_type == 'laplace':
+            if len(context) == 0:  # unigram case
+                return (ngram_count + 1) / (self.total_tokens + self.vocab_size)
             return (ngram_count + 1) / (context_count + self.vocab_size)
 
         elif self.smoothing_type == 'good-turing':
@@ -148,7 +219,34 @@ class NGramModel:
 
             # apply renormalization formula
             N1 = self.freq_of_ngram_freq.get(1, 0)
-            return (1 - N1/self.total_ngrams) * (p_unnorm / sum_p_unnorm)
+            return (1 - N1 / self.total_ngrams) * (p_unnorm / sum_p_unnorm)
+
+        elif self.smoothing_type == 'linear_interpolation':
+            if self.lambdas is None:  # this should be done during training. however, we are doing it here as well, for the sake of completeness.
+                self._calculate_linear_interpolation_weights()
+
+            probability = 0.0
+
+            # for each k from n down to 1
+            for k in range(self.n):
+                sub_ngram = ngram[k:]  # take last k+1 tokens
+                sub_context = sub_ngram[:-1]  # take all but last token
+
+                if k == self.n - 1:  # unigram case
+                    if self.total_tokens > 0:
+                        prob = self.ngrams.get(sub_ngram, 0) / self.total_tokens
+                    else:
+                        prob = 0.0
+                else:
+                    context_count = self.context_counts.get(sub_context, 0)
+                    if context_count > 0:
+                        prob = self.ngrams.get(sub_ngram, 0) / context_count
+                    else:
+                        prob = 0.0
+
+                probability += self.lambdas[k] * prob
+
+            return probability
 
         return 0.0  # will reach here only for an unimplemented smoothing_type passed during initialization of an object of this class.
 

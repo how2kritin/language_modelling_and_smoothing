@@ -32,7 +32,7 @@ Named Entity Recognition) and `parser` modules of `spaCy`. Feel free to enable t
 ```python3 language_model.py <N> <lm_type> <corpus_path>```  
 Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
 If none of these are chosen and something else entirely is given, then it defaults to no smoothing.  
-`<N>` is the N-gram size, and `<corpus_path>` is the path to the corpus.
+`<N>` is the $N$-gram size, and `<corpus_path>` is the path to the corpus.
 
 ## Different types of smoothing used, and their logic
 
@@ -53,8 +53,12 @@ where:
 
 $$r^* = \frac{(r + 1)S(N_{r + 1})}{S(N_r)}$$
 
+and
+
+$$N = \sum rN_r$$
+
 Here, $S(\cdot)$ is the smoothed function. For small values of $r$, $S(N_r) = N_r$ is a reasonable assumption (no
-smoothing is performed). However, for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
+smoothing is performed). N is the total number of objects observed, i.e., it is the total number of $n$-grams. However, for larger values of $r$, values of $S(N_r)$ are read off the regression line given by
 the logarithmic relationship
 
 $$log(N_r) = a + blog(r)$$
@@ -85,6 +89,10 @@ $$P_{SGT} = (1 - \frac{N_1}{N}) \frac{P^{unnorm}_r}{\sum P^{unnorm}_r} \hspace{5
 
 This renormalized estimate is the _Simple Good-Turing_ (SGT) smoothing estimate. This is what we will be using here.
 
+**Note:** As can be seen in the renormalized probability above, the probability mass $\frac{N_1}{N}$ is reserved for
+unseen events, and hence, when predicting the next word, the probabilities of _ALL_ the predicted words will sum up
+to $1 - \frac{N_1}{N}$.
+
 ### Linear Interpolation
 
 When performing this for a trigram, we estimate the trigram probabilities as follows:
@@ -95,7 +103,7 @@ where $\hat{P}$ are the maximum likelihood estimates of the probabilities and $\
 so $P$ again represent probability distributions.
 
 The following is the algorithm to calculate the weights for context-independent linear interpolation λ₁, λ₂, λ₃ when
-the n-gram frequencies are known. N is the size of the corpus. If the denominator in one of the expressions
+the $n$-gram frequencies are known. N is the size of the corpus. If the denominator in one of the expressions
 is 0, we define the result of that expression to be 0. _**[Page 3 of ref [3](https://aclanthology.org/A00-1031.pdf)]**_
 
 ```
@@ -116,7 +124,7 @@ For each trigram t₁, t₂, t₃ with f(t₁, t₂, t₃) > 0:
 Normalize λ₁, λ₂, λ₃
 ```
 
-This idea can be easily extrapolated to any $n$-gram, by simply considering the n-gram probability distribution as being
+This idea can be easily extrapolated to any $n$-gram, by simply considering the $n$-gram probability distribution as being
 dependent on all the previous $i$-gram's Maximum Likelihood Estimates (MLEs) (where $1 \leq i \leq n$).
 
 ---
@@ -128,7 +136,7 @@ dependent on all the previous $i$-gram's Maximum Likelihood Estimates (MLEs) (wh
 ```python3 generator.py <N> <lm_type> <corpus_path> <k>```  
 Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
 If none of these are chosen and something else entirely is given, then it defaults to no smoothing.  
-`<N>` is the N-gram size, `<corpus_path>` is the path to the corpus, and `<k>` is the number of candidates for the next
+`<N>` is the $N$-gram size, `<corpus_path>` is the path to the corpus, and `<k>` is the number of candidates for the next
 word that are supposed to be printed.
 
 ---
