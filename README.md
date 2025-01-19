@@ -1,19 +1,19 @@
 # Language Modelling and Smoothing
 
-## Resources
+# Resources
 
 1. [Stanford NLP - Language Models lecture](https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf)
 2. [Simple Good-Turing Smoothing](https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
 3. [Linear Interpolation - TnT -- A Statistical Part-of-Speech Tagger](https://aclanthology.org/A00-1031.pdf)
 
-## Pre-requisites
+# Pre-requisites
 
 1. python
 2. A python package manager such as `pip` or `conda`.
 3. (OPTIONAL) virtualenv to create a virtual environment.
 4. All the python libraries mentioned in `requirements.txt`.
 
-## Tokenization
+# Tokenization
 
 Using `spaCy` to first tokenize the given string into sentences, and then to obtain each word of that sentence as a
 token. This is done in order to conform to the given output format (as mentioned in the Submission Format). Hence,
@@ -25,22 +25,25 @@ Named Entity Recognition) and `parser` modules of `spaCy`. Feel free to enable t
 
 ---
 
-## Smoothing and Interpolation
+# Smoothing and Interpolation
 
-### Instructions to run
+## Instructions to run
 
 ```python3 language_model.py <N> <lm_type> <corpus_path>```  
 Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
 If none of these are chosen and something else entirely is given, then it defaults to no smoothing.  
 `<N>` is the N-gram size, and `<corpus_path>` is the path to the corpus.
 
+## Different types of smoothing used, and their logic
+
 ### Laplace Smoothing
 
-$$P(w|h) = \frac{c(w,h) + 1}{c(h) + V}$$ 
+$$P(w|h) = \frac{c(w,h) + 1}{c(h) + V}$$
 
-where V is the total vocabulary size (assumed known).
+where $V$ is the total vocabulary size (assumed known).
 
-Essentially, we pretend that we saw every word once more than we actually did.
+Essentially, we pretend that we saw every word once more than we actually did. Hence, it is also called "Add-One"
+smoothing.
 
 ### Good-Turing Smoothing
 
@@ -84,11 +87,43 @@ This renormalized estimate is the _Simple Good-Turing_ (SGT) smoothing estimate.
 
 ### Linear Interpolation
 
+When performing this for a trigram, we estimate the trigram probabilities as follows:
+
+$$P(t_3|t_1, t_2) = \lambda_1\hat{P}(t_3) + \lambda_2\hat{P}(t_3|t_2) + \lambda_3\hat{P}(t_3|t_1, t_2)$$
+
+where $\hat{P}$ are the maximum likelihood estimates of the probabilities and $\lambda_1 + \lambda_2 + \lambda_3 = 1$
+so $P$ again represent probability distributions.
+
+The following is the algorithm to calculate the weights for context-independent linear interpolation λ₁, λ₂, λ₃ when
+the n-gram frequencies are known. N is the size of the corpus. If the denominator in one of the expressions
+is 0, we define the result of that expression to be 0. _**[Page 3 of ref [3](https://aclanthology.org/A00-1031.pdf)]**_
+
+```
+Set λ₁ = λ₂ = λ₃ = 0
+
+For each trigram t₁, t₂, t₃ with f(t₁, t₂, t₃) > 0:
+    Depending on the maximum of the following three values:
+    
+    Case f(t₁, t₂, t₃) - 1 / f(t₁, t₂) - 1:
+        Increment λ₃ by f(t₁, t₂, t₃)
+    
+    Case f(t₂, t₃) - 1 / f(t₂) - 1:
+        Increment λ₂ by f(t₁, t₂, t₃)
+    
+    Case f(t₃) - 1 / N - 1:
+        Increment λ₁ by f(t₁, t₂, t₃)
+        
+Normalize λ₁, λ₂, λ₃
+```
+
+This idea can be easily extrapolated to any $n$-gram, by simply considering the n-gram probability distribution as being
+dependent on all the previous $i$-gram's Maximum Likelihood Estimates (MLEs) (where $1 \leq i \leq n$).
+
 ---
 
-## Generation
+# Generation
 
-### Instructions to run
+## Instructions to run
 
 ```python3 generator.py <N> <lm_type> <corpus_path> <k>```  
 Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear Interpolation.
