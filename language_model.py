@@ -13,28 +13,26 @@ import argparse
 
 class NGramModel:
     def __init__(self, N: int,
-                 smoothing_type: Literal['none', 'laplace', 'good-turing', 'linear_interpolation'] = "None"):
+                 smoothing_type: Literal['none', 'laplace', 'good-turing'] = "None"):
         """
         :param N: This is the size of each 'N'-gram to be generated.
-        :param smoothing_type: Type of smoothing to be performed while training the language model. 'none' by default. Choose one from {'none', 'laplace', 'good-turing', 'linear_interpolation'}.
+        :param smoothing_type: Type of smoothing to be performed while training the language model. 'none' by default. Choose one from {'none', 'laplace', 'good-turing'}.
         """
         self.n = N
         self.smoothing_type = smoothing_type
         self.ngrams = defaultdict(int)
-        self.total_tokens = 0  # Total number of tokens, needed for unigram case. Also acts as N for linear interpolation.
+        self.total_tokens = 0  # Total number of tokens, needed for unigram case.
         self.context_counts = defaultdict(int)
         self.freq_of_ngram_freq = defaultdict(int)  # for Good-Turing smoothing (N_r counts)
         self.vocab_size = 0  # to compute V for Laplace smoothing
         self.total_ngrams = 0  # to compute the total number of N-grams for Good-Turing smoothing (N value for Good-Turing)
-        self.lambdas = None  # for linear interpolation weights
 
-    def train(self, inp_str: str) -> None:
+    def train(self, tokenized_sentences: list[list[str]]) -> None:
         """
         Train the N-gram model.
-        :param inp_str: Corpus of data on which the model will be trained.
+        :param tokenized_sentences: List of sentences, each of which is a list of tokens in that sentence.
         :return:
         """
-        tokenized_sentences = word_tokenizer(inp_str)
         self.vocab_size = len(set(word for sentence in tokenized_sentences for word in sentence))
         self.total_tokens = sum(len(sentence) for sentence in tokenized_sentences)  # N for linear interpolation
 
@@ -52,64 +50,6 @@ class NGramModel:
         if self.smoothing_type == 'good-turing':
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
-
-        # calculate linear interpolation weights for linear interpolation smoothing.
-        elif self.smoothing_type == 'linear_interpolation':
-            self._calculate_linear_interpolation_weights()
-
-    def _calculate_linear_interpolation_weights(self) -> None:
-        """
-        Calculate lambda weights for linear interpolation following the algorithm:
-        For each n-gram:
-            Compare the ratios:
-                (f(w_{i-n+1}...w_i) - 1) / (f(w_{i-n+1}...w_{i-1}) - 1)
-                (f(w_{i-n+2}...w_i) - 1) / (f(w_{i-n+2}...w_{i-1}) - 1)
-                ...
-                (f(w_i) - 1) / (N - 1)
-            Increment corresponding lambda based on which value is maximum
-        Normalize the lambdas to sum to 1.
-        Ref: Page 3 of https://aclanthology.org/A00-1031.pdf
-        """
-        self.lambdas = [0.0] * self.n  # Initialize all lambdas to 0
-        N = self.total_tokens  # total number of tokens in corpus
-
-        # for each observed n-gram
-        for ngram, count in self.ngrams.items():
-            if len(ngram) != self.n or count == 0:
-                continue
-
-            # calculate values to compare for each order k-gram
-            values = []
-
-            # for each k from n down to 1
-            for k in range(self.n):
-                sub_ngram = ngram[k:]  # Take last k+1 tokens
-                sub_context = sub_ngram[:-1]  # Take all but last token
-
-                if k == self.n - 1:  # unigram case
-                    if N > 1:
-                        values.append((count - 1) / (N - 1))
-                    else:
-                        values.append(0.0)
-                else:
-                    sub_count = self.ngrams.get(sub_ngram, 0)
-                    context_count = self.context_counts.get(sub_context, 0)
-                    if context_count > 1:  # need at least 2 occurrences for valid ratio
-                        values.append((sub_count - 1) / (context_count - 1))
-                    else:
-                        values.append(0.0)
-
-            # increment lambda corresponding to maximum value
-            max_index = values.index(max(values))
-            self.lambdas[max_index] += count
-
-        # normalize lambdas to sum to 1
-        total = sum(self.lambdas)
-        if total > 0:
-            self.lambdas = [l / total for l in self.lambdas]
-        else:
-            # just fallback to equal weights if no data (i.e., total of all lambdas came out to be 0 because each of them remained 0).
-            self.lambdas = [1.0 / self.n] * self.n
 
     def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 5) -> dict[int, float]:
         """
@@ -221,35 +161,6 @@ class NGramModel:
             N1 = self.freq_of_ngram_freq.get(1, 0)
             return (1 - N1 / self.total_ngrams) * (p_unnorm / sum_p_unnorm)
 
-        elif self.smoothing_type == 'linear_interpolation':
-            if self.lambdas is None:  # this should be done during training. however, we are doing it here as well, for the sake of completeness.
-                self._calculate_linear_interpolation_weights()
-
-            probability = 0.0
-
-            # for each k from n down to 1
-            for k in range(self.n):
-                sub_ngram = ngram[k:]  # take last k+1 tokens
-                sub_context = sub_ngram[:-1]  # take all but last token
-
-                if k == self.n - 1:  # unigram case
-                    if self.total_tokens > 0:
-                        prob = self.ngrams.get(sub_ngram, 0) / self.total_tokens
-                    else:
-                        prob = 0.0
-                else:
-                    context_count = self.context_counts.get(sub_context, 0)
-                    if context_count > 0:
-                        prob = self.ngrams.get(sub_ngram, 0) / context_count
-                    else:
-                        prob = 0.0
-
-                probability += self.lambdas[k] * prob
-
-            return probability
-
-        return 0.0  # will reach here only for an unimplemented smoothing_type passed during initialization of an object of this class.
-
     def predict_next_word(self, sentence: str, n_next_words: int) -> dict:
         """
         Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
@@ -287,6 +198,156 @@ class NGramModel:
         return probability
 
 
+class LinearInterpolationOfNGramModels:
+    def __init__(self, N: int) -> None:
+        """
+        :param N: This is the size of the largest 'N'-gram model used in this linear interpolation of models.
+        """
+        self.n = N
+        self.lambdas = None  # for linear interpolation weights
+        self.ngram_models = [NGramModel(N=n, smoothing_type='none') for n in range(1, self.n + 1)]
+
+    def train(self, tokenized_sentences: list[list[str]]) -> None:
+        """
+        Train each i-gram model where 1 <= i <= N, and calculate the linear interpolation weights (lambdas).
+        :param tokenized_sentences: List of sentences, each of which is a list of tokens in that sentence.
+        :return:
+        """
+        for model in self.ngram_models:
+            model.train(tokenized_sentences)
+
+        # calculate linear interpolation weights.
+        self._calculate_linear_interpolation_weights()
+
+    def _calculate_linear_interpolation_weights(self) -> None:
+        """
+        Calculate lambda weights for linear interpolation following the algorithm:
+        For each n-gram:
+            Compare the ratios:
+                (f(w_{i-n+1}...w_i) - 1) / (f(w_{i-n+1}...w_{i-1}) - 1)
+                (f(w_{i-n+2}...w_i) - 1) / (f(w_{i-n+2}...w_{i-1}) - 1)
+                ...
+                (f(w_i) - 1) / (N - 1)
+            Increment corresponding lambda based on which value is maximum
+        Normalize the lambdas to sum to 1.
+        Ref: Page 3 of https://aclanthology.org/A00-1031.pdf
+        """
+        self.lambdas = [0.0] * self.n  # Initialize all lambdas to 0
+        N = sum(self.ngram_models[0].ngrams.values())  # total number of tokens in corpus (total number of unigrams)
+
+        # for each observed N-gram
+        for ngram, count in self.ngram_models[-1].ngrams.items():
+            if len(ngram) != self.n or count == 0:
+                continue
+
+            # calculate values to compare for each order k-gram
+            values = []
+
+            # for each k from 1 to n
+            for k in range(1, self.n + 1):
+                sub_ngram = ngram[-k:]  # take the last k tokens
+                sub_context = sub_ngram[:-1]  # take all but the last token
+
+                if k == 1:  # unigram case
+                    if N > 1:
+                        values.append((count - 1) / (N - 1))
+                    else:
+                        values.append(0.0)
+                else:
+                    sub_count = self.ngram_models[k - 1].ngrams.get(sub_ngram, 0)
+                    context_count = self.ngram_models[k - 1].context_counts.get(sub_context, 0)
+                    if context_count > 1:  # need at least 2 occurrences for valid ratio
+                        values.append((sub_count - 1) / (context_count - 1))
+                    else:
+                        values.append(0.0)
+
+            # increment lambda corresponding to maximum value
+            max_index = values.index(max(values))
+            self.lambdas[max_index] += count
+
+        # normalize lambdas to sum to 1
+        total = sum(self.lambdas)
+        if total > 0:
+            self.lambdas = [l / total for l in self.lambdas]
+        else:
+            # just fallback to equal weights if no data (i.e., total of all lambdas came out to be 0 because each of them remained 0).
+            self.lambdas = [1.0 / self.n] * self.n
+
+    def _calculate_probability(self, ngram: tuple[str, ...]) -> float:
+        if self.lambdas is None:  # this should be done during training. however, we are doing it here as well, for the sake of completeness.
+            self._calculate_linear_interpolation_weights()
+
+        probability = 0.0
+        N = sum(self.ngram_models[0].ngrams.values())  # total number of tokens in corpus (total number of unigrams)
+
+        # for each k from 1 to n
+        for k in range(1, self.n + 1):
+            sub_ngram = ngram[-k:]  # take the last k tokens
+            sub_context = sub_ngram[:-1]  # take all but the last token
+
+            if k == 1:  # unigram case
+                if N > 0:
+                    prob = self.ngram_models[0].ngrams.get(sub_ngram, 0) / N
+                else:
+                    prob = 0.0
+            else:
+                sub_count = self.ngram_models[k - 1].ngrams.get(sub_ngram, 0)
+                context_count = self.ngram_models[k - 1].context_counts.get(sub_context, 0)
+                if context_count > 0:
+                    prob = sub_count / context_count
+                else:
+                    prob = 0.0
+
+            probability += self.lambdas[k - 1] * prob
+
+        return probability
+
+    def predict_next_word(self, sentence: str, n_next_words: int) -> dict:
+        """
+        Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
+        :param sentence: Sentence for which next word is supposed to be predicted.
+        :param n_next_words: Number of possible candidates for the next word, to predict.
+        :return:
+        """
+        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0]
+        context = tuple(tokens[-(self.n - 1):])
+
+        # collect all possible next words from all n-gram models
+        predictions = defaultdict(float)
+        for k in range(1, self.n + 1):
+            sub_context = context[-(k-1):] if k > 1 else tuple()
+            
+            # look through all n-grams of order k
+            for ngram in self.ngram_models[k-1].ngrams:
+                if len(ngram) == k and ngram[:-1] == sub_context:
+                    next_word = ngram[-1]
+
+                    # calculate probability using linear interpolation
+                    full_ngram = context + (next_word,)
+                    predictions[next_word] = self._calculate_probability(full_ngram)
+
+        # return the top n_next_words after sorting them by decreasing order of probabilities.
+        sorted_predictions = dict(sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_next_words])
+        return sorted_predictions
+
+    def calculate_probability_of_sentence(self, sentence: str) -> float:
+        """
+        Given a sentence, calculate the probability of that sentence occurring.
+        :param sentence: Input sentence to calculate probability for.
+        :return: Probability of the sentence.
+        """
+        tokens = ['<s>'] * (self.n - 1) + word_tokenizer(sentence)[0] + ['</s>']
+        probability = 1.0
+
+        for i in range(len(tokens) - self.n + 1):
+            ngram = tuple(tokens[i:i + self.n])
+            context = tuple(tokens[i:i + self.n - 1])
+            prob = self._calculate_probability(ngram)
+            probability *= prob
+
+        return probability
+
+
 def main(N: int, lm_type: str, corpus_path: str) -> None:
     match lm_type:
         case 'l':
@@ -297,15 +358,20 @@ def main(N: int, lm_type: str, corpus_path: str) -> None:
             smoothing_type = 'linear_interpolation'
         case _:
             smoothing_type = 'none'
-    ngm = NGramModel(N=N, smoothing_type=smoothing_type)
 
     try:
         with open(corpus_path, "r") as file:
             text = file.read()
-        ngm.train(text)
+        tokenized_sentences = word_tokenizer(text)
     except FileNotFoundError:
         raise FileNotFoundError("Unable to find a file at that path to use as the corpus!")
 
+    if smoothing_type == 'linear_interpolation':
+        ngm = LinearInterpolationOfNGramModels(N)
+    else:
+        ngm = NGramModel(N=N, smoothing_type=smoothing_type)
+
+    ngm.train(tokenized_sentences)
     input_sentence = str(input('input sentence: '))
     print('score: ', ngm.calculate_probability_of_sentence(sentence=input_sentence))
 
