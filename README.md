@@ -27,10 +27,28 @@ strings, i.e., the different words of that sentence.
 
 ## Instructions to run
 
-```python3 language_model.py <N> <lm_type> <corpus_path>```  
+```python3 language_model.py <N> <lm_type> <corpus_path> <task>```  
 Here, `<lm_type>` must be one of `l` for Laplace Smoothing, `g` for Good-Turing Smoothing, `i` for Linear
 Interpolation, 'n' for No Smoothing.  
-`<N>` is the $N$-gram size, and `<corpus_path>` is the path to the corpus.
+`<N>` is the $N$-gram size, `<corpus_path>` is the path to the corpus and `<task>` is either 'pr' to get probability of
+sentence (must provide a sentence as input when prompted), or `pe` to get the avg perplexity of the corpus and the
+perplexity of 1000 train and 1000 test sentences.
+
+### How to obtain perplexity?
+
+Run ```python3 language_model.py <N> <lm_type> <corpus_path> pe``` to automatically generate two files at
+`./perplexity_scores/` directory; one for the train set and another for the test set. The number at the top of the file
+is avg perplexity of the corpus, followed by `<sentence_i>   <perplexity>` lines.
+
+To calculate perplexity, I am using the formula:
+
+$$PP(w) = 2^{-\frac{1}{N}\sum {\log_2 P(w_i|w_{i-n+1}...w_{i-1}})}$$
+
+instead of:
+
+$$PP(w) = \root{N}\of{\frac{1}{\prod{P(w_i|w_{i-n+1}...w_{i-1})}}}$$
+
+for the sake of numerical stability.
 
 ## Different types of smoothing used, and their logic
 

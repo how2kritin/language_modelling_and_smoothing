@@ -2,13 +2,30 @@
 # 1. https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf
 # 2. https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf
 # 3. https://aclanthology.org/A00-1031.pdf
-import string
+import math
+import os
+import random
+import sys
 from math import log, exp
 from typing import Literal
 from collections import defaultdict
 import numpy as np
 from tokenizer import word_tokenizer
 import argparse
+import re
+
+random_state = 42  # for train-test split reproducibility while obtaining perplexity
+random.seed(random_state)
+
+
+# function to detokenize a list of tokens
+def detokenize(tokens):
+    sentence = " ".join(tokens)
+    # fixing spaces before punctuation
+    sentence = re.sub(r"\s+([.,!?;:\"\')])", r"\1", sentence)
+    # fixing spaces after opening quotes/brackets
+    sentence = re.sub(r"([\"'(\[{])\s+", r"\1", sentence)
+    return sentence
 
 
 class NGramModel:
@@ -160,14 +177,14 @@ class NGramModel:
             N1 = self.freq_of_ngram_freq.get(1, 0)
             return (1 - N1 / self.total_ngrams) * (p_unnorm / sum_p_unnorm)
 
-    def predict_next_word(self, sentence: list[str], n_candidates_for_next_word: int) -> dict:
+    def predict_next_word(self, tokenized_sentence: list[str], n_candidates_for_next_word: int) -> dict:
         """
         Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
-        :param sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
+        :param tokenized_sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
         :param n_candidates_for_next_word: Number of possible candidates for the next word, to predict.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + sentence
+        tokens = ['<s>'] * (self.n - 1) + tokenized_sentence
         context = tuple(tokens[-(self.n - 1):])
 
         predictions = {}
@@ -181,13 +198,13 @@ class NGramModel:
             sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_candidates_for_next_word])
         return sorted_predictions
 
-    def calculate_probability_of_sentence(self, sentence: list[str]) -> float:
+    def calculate_probability_of_sentence(self, tokenized_sentence: list[str]) -> float:
         """
         Given a sentence, calculate the probability of that sentence occurring.
-        :param sentence: Tokenized input sentence (list of str) to calculate probability for.
+        :param tokenized_sentence: Tokenized input sentence (list of str) to calculate probability for.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
+        tokens = ['<s>'] * (self.n - 1) + tokenized_sentence + ['</s>']
         probability = 1.0
 
         for i in range(len(tokens) - self.n + 1):
@@ -197,15 +214,15 @@ class NGramModel:
 
         return probability
 
-    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> list[str]:
+    def generate_sentence_next_n_words(self, tokenized_sentence: list[str], n: int) -> list[str]:
         """
         Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
-        :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
+        :param tokenized_sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
         :param n: Number of next words to predict.
         :return:
         """
         for _ in range(n):
-            next_words_list = list(self.predict_next_word(sentence, 1).keys())
+            next_words_list = list(self.predict_next_word(tokenized_sentence, 1).keys())
             if not next_words_list:  # if there is no word that can come next as this context hasn't been seen before
                 break
             next_word = next_words_list[0]
@@ -214,9 +231,42 @@ class NGramModel:
             if next_word == '</s>':
                 break
 
-            sentence.append(next_word)
+            tokenized_sentence.append(next_word)
 
-        return sentence
+        return tokenized_sentence
+
+    def perplexity(self, tokenized_sentences: list[list[str]]) -> float:
+        """
+        Calculate the perplexity of the language model on a given corpus.
+        Perplexity = exp(-1/N * sum(log P(w_i|w_{i-n+1}...w_{i-1})))
+        where N is the total number of words in corpus.
+
+        :param tokenized_sentences: List of tokenized sentences to calculate perplexity on
+        :return: Perplexity value
+        """
+        log_prob_sum = 0.0
+        total_words = 0
+
+        for sentence in tokenized_sentences:
+            # add start and end tokens
+            tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
+            total_words += len(sentence) + 1  # +1 to count the </s> token
+
+            for i in range(len(tokens) - self.n + 1):
+                ngram = tuple(tokens[i:i + self.n])
+                context = tuple(tokens[i:i + self.n - 1])
+
+                # get probability of the current word, given context
+                prob = self.calculate_probability(ngram, context)
+
+                # handle zero probability case (smoothing should prevent this if getting perplexity on a smoothed model, but just in case)
+                if prob <= 0:
+                    prob = sys.float_info.epsilon
+
+                log_prob_sum += math.log2(prob)
+
+        # calculate and return perplexity
+        return math.pow(2, -1 * log_prob_sum / total_words)
 
 
 class LinearInterpolationOfNGramModels:
@@ -311,14 +361,14 @@ class LinearInterpolationOfNGramModels:
 
         return probability
 
-    def predict_next_word(self, sentence: list[str], n_candidates_for_next_word: int) -> dict:
+    def predict_next_word(self, tokenized_sentence: list[str], n_candidates_for_next_word: int) -> dict:
         """
         Given a sentence, predict n_next_words possible candidates for the next word, along with their probabilities.
-        :param sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
+        :param tokenized_sentence: Tokenized sentence (list of strings) for which next word is supposed to be predicted.
         :param n_candidates_for_next_word: Number of possible candidates for the next word, to predict.
         :return:
         """
-        tokens = ['<s>'] * (self.n - 1) + sentence
+        tokens = ['<s>'] * (self.n - 1) + tokenized_sentence
         context = tuple(tokens[-(self.n - 1):])
 
         # collect all possible next words from all n-gram models
@@ -340,13 +390,13 @@ class LinearInterpolationOfNGramModels:
             sorted(predictions.items(), key=lambda item: item[1], reverse=True)[:n_candidates_for_next_word])
         return sorted_predictions
 
-    def calculate_probability_of_sentence(self, sentence: list[str]) -> float:
+    def calculate_probability_of_sentence(self, tokenized_sentence: list[str]) -> float:
         """
         Given a sentence, calculate the probability of that sentence occurring.
-        :param sentence: Tokenized input sentence (list of str) to calculate probability for.
+        :param tokenized_sentence: Tokenized input sentence (list of str) to calculate probability for.
         :return: Probability of the sentence.
         """
-        tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
+        tokens = ['<s>'] * (self.n - 1) + tokenized_sentence + ['</s>']
         probability = 1.0
 
         for i in range(len(tokens) - self.n + 1):
@@ -356,15 +406,15 @@ class LinearInterpolationOfNGramModels:
 
         return probability
 
-    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> list[str]:
+    def generate_sentence_next_n_words(self, tokenized_sentence: list[str], n: int) -> list[str]:
         """
         Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
-        :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
+        :param tokenized_sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
         :param n: Number of next words to predict.
         :return:
         """
         for _ in range(n):
-            next_words_list = list(self.predict_next_word(sentence, 1).keys())
+            next_words_list = list(self.predict_next_word(tokenized_sentence, 1).keys())
             if not next_words_list:  # if there is no word that can come next as this context hasn't been seen before
                 break
             next_word = next_words_list[0]
@@ -373,11 +423,60 @@ class LinearInterpolationOfNGramModels:
             if next_word == '</s>':
                 break
 
-            sentence.append(next_word)
-        return sentence
+            tokenized_sentence.append(next_word)
+        return tokenized_sentence
+
+    def perplexity(self, tokenized_sentences: list[list[str]]) -> float:
+        """
+        Calculate the perplexity of the linearly interpolated language model on a given corpus.
+        Perplexity = exp(-1/N * sum(log P(w_i|w_{i-n+1}...w_{i-1})))
+        where N is the total number of words in corpus data and P is the interpolated probability.
+
+        :param tokenized_sentences: List of tokenized sentences to calculate perplexity on
+        :return:
+        """
+        log_prob_sum = 0.0
+        total_words = 0
+
+        for sentence in tokenized_sentences:
+            # adding start and end tokens
+            tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
+            total_words += len(sentence) + 1  # +1 to count </s> token
+
+            for i in range(len(tokens) - self.n + 1):
+                ngram = tuple(tokens[i:i + self.n])
+                prob = self.calculate_probability(ngram)
+
+                # handle zero probability scenario (as log(0) is not defined)
+                if prob <= 0:
+                    prob = sys.float_info.epsilon
+
+                log_prob_sum += math.log2(prob)
+
+        # calculate and return perplexity
+        return math.pow(2, -1 * log_prob_sum / total_words)
 
 
-def main(N: int, lm_type: str, corpus_path: str) -> None:
+def calculate_and_save_perplexities(sentences: list[list[str]], ngm: NGramModel | LinearInterpolationOfNGramModels,
+                                    output_file: str) -> None:
+    total_perplexity = 0
+    num_sentences = len(sentences)
+
+    results = []
+    for sentence in sentences:
+        sentence_perplexity = ngm.perplexity([sentence])
+        total_perplexity += sentence_perplexity
+        results.append((detokenize(sentence), sentence_perplexity))
+
+    avg_perplexity = total_perplexity / num_sentences
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(f"{avg_perplexity}\n")
+        for sentence_text, perplexity in results:
+            f.write(f"{sentence_text}\t{perplexity}\n")
+
+
+def main(N: int, lm_type: str, corpus_path: str, task: str) -> None:
     match lm_type:
         case 'l':
             smoothing_type = 'laplace'
@@ -401,8 +500,36 @@ def main(N: int, lm_type: str, corpus_path: str) -> None:
         ngm = NGramModel(N=N, smoothing_type=smoothing_type)
 
     ngm.train(tokenized_sentences)
-    input_sentence = str(input('input sentence: '))
-    print('score: ', ngm.calculate_probability_of_sentence(sentence=word_tokenizer(input_sentence)[0]))
+
+    if task == 'pr':
+        # take a sentence as input, and return probability of that sentence occurring
+        input_sentence = str(input('input sentence: '))
+        print('score: ', ngm.calculate_probability_of_sentence(tokenized_sentence=word_tokenizer(input_sentence)[0]))
+    if task == 'pe':
+        base_name = os.path.basename(corpus_path)
+        output_dir = "./perplexity_scores"
+        output_base = f"2022101071_{N}_{smoothing_type}_{base_name}"
+        train_file = os.path.join(output_dir, output_base + "_train.txt")
+        test_file = os.path.join(output_dir, output_base + "_test.txt")
+
+        # creating test set of 1000 randomly sampled sentences
+        test_size = 100
+        all_indices = list(range(len(tokenized_sentences)))
+        test_indices = set(random.sample(all_indices, test_size))
+
+        # split into train and test sets
+        train_sentences = [sent for idx, sent in enumerate(tokenized_sentences)
+                           if idx not in test_indices]
+        test_sentences = [sent for idx, sent in enumerate(tokenized_sentences)
+                          if idx in test_indices]
+
+        ngm.train(train_sentences)
+
+        # sample 100 sentences from train set for evaluation
+        train_eval_sentences = random.sample(train_sentences, 100)
+
+        calculate_and_save_perplexities(train_eval_sentences, ngm, train_file)
+        calculate_and_save_perplexities(test_sentences, ngm, test_file)
 
 
 if __name__ == "__main__":
@@ -410,5 +537,6 @@ if __name__ == "__main__":
     parser.add_argument('N', type=int)
     parser.add_argument('lm_type', type=str, choices=['n', 'l', 'g', 'i'])
     parser.add_argument('corpus_path', type=str)
+    parser.add_argument('task', type=str, choices=['pr', 'pe'])
     args = parser.parse_args()
-    main(args.N, args.lm_type, args.corpus_path)
+    main(args.N, args.lm_type, args.corpus_path, args.task)
