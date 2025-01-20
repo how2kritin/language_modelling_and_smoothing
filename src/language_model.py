@@ -197,7 +197,7 @@ class NGramModel:
 
         return probability
 
-    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> str:
+    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> list[str]:
         """
         Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
         :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
@@ -214,10 +214,7 @@ class NGramModel:
             if next_word == '</s>':
                 break
 
-            if next_word not in string.punctuation and next_word not in {'<s>', '</s>'}:
-                sentence += " " + next_word
-            else:
-                sentence += next_word
+            sentence.append(next_word)
 
         return sentence
 
@@ -359,7 +356,7 @@ class LinearInterpolationOfNGramModels:
 
         return probability
 
-    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> str:
+    def generate_sentence_next_n_words(self, sentence: list[str], n: int) -> list[str]:
         """
         Given a sentence, generate the next n most likely words of that sentence (at each stage, pick the most likely word to occur next.)
         :param sentence: Tokenized sentence (list of str) for which we are trying to generate next n words.
@@ -376,11 +373,7 @@ class LinearInterpolationOfNGramModels:
             if next_word == '</s>':
                 break
 
-            if next_word not in string.punctuation and next_word not in {'<s>', '</s>'}:
-                sentence += " " + next_word
-            else:
-                sentence += next_word
-
+            sentence.append(next_word)
         return sentence
 
 
