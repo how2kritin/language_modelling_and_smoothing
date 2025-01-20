@@ -51,7 +51,7 @@ class NGramModel:
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
 
-    def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 5) -> dict[int, float]:
+    def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 2) -> dict[int, float]:
         """
         To calculate smoothed Nr counts using the Church and Gale method (ref: Page 5 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
         1. Calculate Zr values.

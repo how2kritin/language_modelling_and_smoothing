@@ -15,13 +15,11 @@
 
 # Tokenization
 
-Using `spaCy` to first tokenize the given string into sentences, and then to obtain each word of that sentence as a
-token. This is done in order to conform to the given output format (as mentioned in the Submission Format). Hence,
-punctuations are included in the tokenized text.
+Using the `NLTK punkt_tab` tokenizer to split the given data up into sentences, and then split the sentences up into
+word tokens. Furthermore, I am using `regex` to handle URLs, mentions, hashtags, time, age and numbers.
 
-I have increased the max `spaCy` tokenization length to 2000000 characters. Feel free to change this if required, but be
-warned that it uses more RAM if you do so. In order to reduce the amount of RAM being used, I have disabled the `ner` (
-Named Entity Recognition) and `parser` modules of `spaCy`. Feel free to enable this if you need them.
+The tokenizer takes a string as input, and splits it up into list of lists where each list is a sentence, which contains
+strings, i.e., the different words of that sentence.
 
 ---
 

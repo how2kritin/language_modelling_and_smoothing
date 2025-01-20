@@ -1,6 +1,17 @@
 from tokenizer import word_tokenizer
 from language_model import NGramModel, LinearInterpolationOfNGramModels
 import argparse
+import re
+
+# function to detokenize a list of tokens
+def detokenize(tokens):
+    sentence = " ".join(tokens)
+    # fixing spaces before punctuation
+    sentence = re.sub(r"\s+([.,!?;:\"\')])", r"\1", sentence)
+    # fixing spaces after opening quotes/brackets
+    sentence = re.sub(r"([\"'(\[\{])\s+", r"\1", sentence)
+    return sentence
+
 
 
 def main(N: int, lm_type: str, corpus_path: str, k: int, gen_type: str) -> None:
@@ -30,7 +41,9 @@ def main(N: int, lm_type: str, corpus_path: str, k: int, gen_type: str) -> None:
     input_sentence = str(input('input sentence: '))
 
     if gen_type == 's':
-        print(ngm.generate_sentence_next_n_words(sentence=word_tokenizer(input_sentence)[0], n=k))
+        generated_list_of_words = ngm.generate_sentence_next_n_words(sentence=word_tokenizer(input_sentence)[0], n=k)
+        # sentence = TreebankWordDetokenizer().detokenize(generated_list_of_words)
+        print(detokenize(generated_list_of_words))
     elif gen_type == 'w':
         predicted_words_dict = ngm.predict_next_word(sentence=word_tokenizer(input_sentence)[0], n_candidates_for_next_word=k)
         if len(predicted_words_dict) == 0:
