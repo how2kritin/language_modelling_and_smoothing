@@ -31,7 +31,7 @@ def calculate_and_save_perplexities(sentences: list[list[str]], ngm: NGramModel 
 
     results = []
     for sentence in sentences:
-        sentence_perplexity = ngm.perplexity([sentence])
+        sentence_perplexity = ngm.perplexity(sentence)
         total_perplexity += sentence_perplexity
         results.append((detokenize(sentence), sentence_perplexity))
 
@@ -80,7 +80,7 @@ def main(N: int, lm_type: str, corpus_path: str, task: str) -> None:
         test_file = os.path.join(output_dir, output_base + "_test.txt")
 
         # creating test set of 1000 randomly sampled sentences
-        test_size = 100
+        test_size = 1000
         all_indices = list(range(len(tokenized_sentences)))
         test_indices = set(random.sample(all_indices, test_size))
 
@@ -93,9 +93,9 @@ def main(N: int, lm_type: str, corpus_path: str, task: str) -> None:
         ngm.train(train_sentences)
 
         # sample 100 sentences from train set for evaluation
-        train_eval_sentences = random.sample(train_sentences, 100)
+        # train_eval_sentences = random.sample(train_sentences, 100)
 
-        calculate_and_save_perplexities(train_eval_sentences, ngm, train_file)
+        calculate_and_save_perplexities(train_sentences, ngm, train_file)
         calculate_and_save_perplexities(test_sentences, ngm, test_file)
 
 
