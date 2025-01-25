@@ -15,11 +15,7 @@
 
 # Tokenization
 
-Using the `NLTK punkt_tab` tokenizer to split the given data up into sentences, and then split the sentences up into
-word tokens. Furthermore, I am using `regex` to handle URLs, mentions, hashtags, time, age and numbers.
-
-The tokenizer takes a string as input, and splits it up into list of lists where each list is a sentence, which contains
-strings, i.e., the different words of that sentence.
+Using `regex` to tokenize the input into a list of lists, where each list represents the set of tokens in a sentence.
 
 ---
 
