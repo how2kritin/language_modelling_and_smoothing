@@ -20,6 +20,7 @@ class NGramModel:
         self.freq_of_ngram_freq = defaultdict(int)  # for Good-Turing smoothing (N_r counts)
         self.vocab_size = 0  # to compute V for Laplace smoothing
         self.total_ngrams = 0  # to compute the total number of N-grams for Good-Turing smoothing (N value for Good-Turing)
+        self.context_unnorm_sums = defaultdict(float)  # Store pre-calculated sums for each context
 
     def train(self, tokenized_sentences: list[list[str]]) -> None:
         """
@@ -44,8 +45,15 @@ class NGramModel:
         if self.smoothing_type == 'good-turing':
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
+            
+            # Calculate context sums after we have all ngram counts
+            for ngram, count in self.ngrams.items():
+                context = ngram[:-1]
+                if count >= 1:
+                    r_star = self._calculate_good_turing_r_star(count)
+                    self.context_unnorm_sums[context] += r_star / self.total_ngrams
 
-    def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 2) -> dict[int, float]:
+    def _calculate_smoothed_Nr_counts(self, small_r_threshold: int = 5) -> dict[int, float]:
         """
         To calculate smoothed Nr counts using the Church and Gale method (ref: Page 5 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
         1. Calculate Zr values.
@@ -138,17 +146,9 @@ class NGramModel:
             if ngram_count == 0:
                 return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
 
-            # as we are using Turing estimate for small r values and Good-Turing estimate for large r values, we need to renormalize them (ref: Page 8 and 9 of https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
-            # get unnormalized probability using r*
+            # Use pre-calculated sum for normalization
             p_unnorm = self._calculate_good_turing_r_star(ngram_count) / self.total_ngrams
-
-            # calculate sum of unnormalized probabilities for all possible continuations
-            sum_p_unnorm = 0
-            for possible_ngram in self.ngrams:
-                if possible_ngram[:-1] == context:  # same context
-                    r = self.ngrams[possible_ngram]
-                    if r >= 1:
-                        sum_p_unnorm += self._calculate_good_turing_r_star(r) / self.total_ngrams
+            sum_p_unnorm = self.context_unnorm_sums[context]
 
             # apply renormalization formula
             N1 = self.freq_of_ngram_freq.get(1, 0)

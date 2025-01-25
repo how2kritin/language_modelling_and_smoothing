@@ -160,32 +160,34 @@ class LinearInterpolationOfNGramModels:
             tokenized_sentence.append(next_word)
         return tokenized_sentence
 
-    def perplexity(self, tokenized_sentences: list[list[str]]) -> float:
+    def perplexity(self, tokenized_sentence: list[str]) -> float:
         """
-        Calculate the perplexity of the linearly interpolated language model on a given corpus.
+        Calculate the perplexity of the language model for a given sentence.
         Perplexity = exp(-1/N * sum(log P(w_i|w_{i-n+1}...w_{i-1})))
-        where N is the total number of words in corpus data and P is the interpolated probability.
+        where N is the total number of ngrams in the sentence.
 
-        :param tokenized_sentences: List of tokenized sentences to calculate perplexity on
-        :return:
+        :param tokenized_sentence: Tokenized sentence.
+        :return: Perplexity value
         """
         log_prob_sum = 0.0
-        total_words = 0
+        total_sentence_ngrams = 0
 
-        for sentence in tokenized_sentences:
-            # adding start and end tokens
-            tokens = ['<s>'] * (self.n - 1) + sentence + ['</s>']
-            total_words += len(sentence) + 1  # +1 to count </s> token
+        # add start and end tokens
+        tokens = ['<s>'] * (self.n - 1) + tokenized_sentence + ['</s>']
+        total_sentence_ngrams += len(tokenized_sentence) + 1  # +1 to count the </s> token
 
-            for i in range(len(tokens) - self.n + 1):
-                ngram = tuple(tokens[i:i + self.n])
-                prob = self.calculate_probability(ngram)
+        for i in range(len(tokens) - self.n + 1):
+            ngram = tuple(tokens[i:i + self.n])
+            context = tuple(tokens[i:i + self.n - 1])
 
-                # handle zero probability scenario (as log(0) is not defined)
-                if prob <= 0:
-                    prob = sys.float_info.epsilon
+            # get probability of the current word, given context
+            prob = self.calculate_probability(ngram)
 
-                log_prob_sum += math.log2(prob)
+            # handle zero probability case (smoothing should prevent this if getting perplexity on a smoothed model, but just in case)
+            if prob <= 0:
+                prob = sys.float_info.epsilon
+
+            log_prob_sum += math.log2(prob)
 
         # calculate and return perplexity
-        return math.pow(2, -1 * log_prob_sum / total_words)
+        return math.pow(2, -1 * log_prob_sum / total_sentence_ngrams)
