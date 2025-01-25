@@ -6,7 +6,7 @@
 
 ---
 
-# Perplexity Scores - Analysis
+# Average Corpus Perplexity Scores - Analysis
 
 ### LM1
 
@@ -22,7 +22,7 @@ LM2 for N = 5 -> train = 13, test = 50
 
 ### LM3
 
-LM3 for N = 1 -> train = 459, test = 413  
+LM3 for N = 1 -> train = 413, test = 459  
 LM3 for N = 3 -> train = 11, test = 186  
 LM3 for N = 5 -> train = 7, test = 189
 
