@@ -32,8 +32,6 @@ def calculate_and_save_perplexities(sentences: list[list[str]], ngm: NGramModel 
     results = []
     for sentence in sentences:
         sentence_perplexity = ngm.perplexity(sentence)
-        if sentence_perplexity > 100000:
-            print(sentence, sentence_perplexity)
         total_perplexity += sentence_perplexity
         results.append((detokenize(sentence), sentence_perplexity))
 

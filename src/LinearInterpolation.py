@@ -178,16 +178,15 @@ class LinearInterpolationOfNGramModels:
 
         for i in range(len(tokens) - self.n + 1):
             ngram = tuple(tokens[i:i + self.n])
-            context = tuple(tokens[i:i + self.n - 1])
 
             # get probability of the current word, given context
             prob = self.calculate_probability(ngram)
 
             # handle zero probability case (smoothing should prevent this if getting perplexity on a smoothed model, but just in case)
             if prob <= 0:
-                prob = sys.float_info.epsilon
+                prob = 1e-6
 
-            log_prob_sum += math.log2(prob)
+            log_prob_sum += math.log(prob)
 
         # calculate and return perplexity
-        return math.pow(2, -1 * log_prob_sum / total_sentence_ngrams)
+        return math.exp(-1 * log_prob_sum / total_sentence_ngrams)

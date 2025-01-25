@@ -39,13 +39,14 @@ class NGramModel:
                 context = tuple(tokens[i:i + self.n - 1])
                 self.ngrams[ngram] += 1
                 self.context_counts[context] += 1
-                self.total_ngrams += 1
+
+        self.total_ngrams = sum(self.ngrams.values())
 
         # to compute frequency of ngram frequencies for Good-Turing smoothing.
         if self.smoothing_type == 'good-turing':
             for count in self.ngrams.values():
                 self.freq_of_ngram_freq[count] += 1
-            
+
             # Calculate context sums after we have all ngram counts
             for ngram, count in self.ngrams.items():
                 context = ngram[:-1]
@@ -133,18 +134,27 @@ class NGramModel:
         if self.smoothing_type == 'none':
             if len(context) == 0:  # unigram case
                 return ngram_count / self.total_tokens
+
             if context_count == 0:  # context hasn't been seen previously, so, probability of occurrence is trivially 0.
-                print(context)
                 return 0.0
+
             return ngram_count / context_count
 
         elif self.smoothing_type == 'laplace':
             if len(context) == 0:  # unigram case
                 return (ngram_count + 1) / (self.total_tokens + self.vocab_size)
+
             return (ngram_count + 1) / (context_count + self.vocab_size)
 
         elif self.smoothing_type == 'good-turing':
-            if ngram_count == 0:
+            if len(context) == 0:  # unigram case
+                if ngram_count == 0:
+                    return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
+                r_star = self._calculate_good_turing_r_star(ngram_count)
+                return r_star / self.total_ngrams
+
+            if ngram_count == 0:  # unseen event
+                # print(ngram, self.freq_of_ngram_freq.get(1, 0), self.total_ngrams)
                 return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
 
             # Use pre-calculated sum for normalization
@@ -240,7 +250,7 @@ class NGramModel:
             if prob <= 0:
                 prob = 1e-6
 
-            log_prob_sum += math.log2(prob)
+            log_prob_sum += math.log(prob)
 
         # calculate and return perplexity
-        return math.pow(2, -1 * log_prob_sum / total_sentence_ngrams)
+        return math.exp(-1 * log_prob_sum / total_sentence_ngrams)
