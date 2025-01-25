@@ -154,10 +154,9 @@ class NGramModel:
                 return r_star / self.total_ngrams
 
             if ngram_count == 0:  # unseen event
-                # print(ngram, self.freq_of_ngram_freq.get(1, 0), self.total_ngrams)
                 return self.freq_of_ngram_freq.get(1, 0) / self.total_ngrams
 
-            # Use pre-calculated sum for normalization
+            # using pre-calculated sum for normalization
             p_unnorm = self._calculate_good_turing_r_star(ngram_count) / self.total_ngrams
             sum_p_unnorm = self.context_unnorm_sums[context]
 
