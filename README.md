@@ -8,9 +8,9 @@
 
 # Pre-requisites
 
-1. python
+1. `python 3.12`
 2. A python package manager such as `pip` or `conda`.
-3. (OPTIONAL) virtualenv to create a virtual environment.
+3. (OPTIONAL) `virtualenv` to create a virtual environment.
 4. All the python libraries mentioned in `requirements.txt`.
 
 # Tokenization
@@ -156,6 +156,12 @@ which case, `<k>` is number of next words to be generated in the sentence.)
 
 For sentence generation, the most probable word is chosen at each stage to form the sentence, until either `k` words
 are generated or the end of sentence token `<\s>` is generated.
+
+---
+
+# Analysis
+
+Please refer to the [report](Report.md) for an analysis of these models.
 
 ---
 
