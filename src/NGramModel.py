@@ -1,7 +1,6 @@
-import sys
 from math import log, exp
 from typing import Literal
-from _collections import defaultdict
+from collections import defaultdict
 import numpy as np
 import math
 
@@ -172,13 +171,20 @@ class NGramModel:
         :return:
         """
         tokens = ['<s>'] * (self.n - 1) + tokenized_sentence
-        context = tuple(tokens[-(self.n - 1):])
+        context = tuple(tokens[-(self.n - 1):]) if self.n > 1 else tuple()
 
         predictions = {}
-        for ngram in self.ngrams:
-            if ngram[:-1] == context:
-                probability = self.calculate_probability(ngram, context)
-                predictions[ngram[-1]] = probability
+        if self.n == 1:  # unigram case
+            for word in self.ngrams:
+                if isinstance(word, tuple):
+                    word = word[0]  # extract the word from the tuple
+                probability = self.calculate_probability((word,), tuple())
+                predictions[word] = probability
+        else:  # n-gram case where n > 1
+            for ngram in self.ngrams:
+                if ngram[:-1] == context:
+                    probability = self.calculate_probability(ngram, context)
+                    predictions[ngram[-1]] = probability
 
         # return the top n_next_words after sorting them by decreasing order of probabilities.
         sorted_predictions = dict(

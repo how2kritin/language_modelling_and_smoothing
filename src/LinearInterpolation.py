@@ -1,7 +1,6 @@
 from NGramModel import NGramModel
-import sys
 import math
-from _collections import defaultdict
+from collections import defaultdict
 
 class LinearInterpolationOfNGramModels:
     def __init__(self, N: int) -> None:

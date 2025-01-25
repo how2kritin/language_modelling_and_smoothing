@@ -91,9 +91,6 @@ def main(N: int, lm_type: str, corpus_path: str, task: str) -> None:
 
         ngm.train(train_sentences)
 
-        # sample 100 sentences from train set for evaluation
-        # train_eval_sentences = random.sample(train_sentences, 100)
-
         calculate_and_save_perplexities(train_sentences, ngm, train_file)
         calculate_and_save_perplexities(test_sentences, ngm, test_file)
 
