@@ -134,6 +134,7 @@ class NGramModel:
             if len(context) == 0:  # unigram case
                 return ngram_count / self.total_tokens
             if context_count == 0:  # context hasn't been seen previously, so, probability of occurrence is trivially 0.
+                print(context)
                 return 0.0
             return ngram_count / context_count
 
@@ -237,7 +238,7 @@ class NGramModel:
 
             # handle zero probability case (smoothing should prevent this if getting perplexity on a smoothed model, but just in case)
             if prob <= 0:
-                prob = sys.float_info.epsilon
+                prob = 1e-6
 
             log_prob_sum += math.log2(prob)
 

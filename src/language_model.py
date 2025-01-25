@@ -68,10 +68,9 @@ def main(N: int, lm_type: str, corpus_path: str, task: str) -> None:
     else:
         ngm = NGramModel(N=N, smoothing_type=smoothing_type)
 
-    ngm.train(tokenized_sentences)
-
     if task == 'pr':
         # take a sentence as input, and return probability of that sentence occurring
+        ngm.train(tokenized_sentences)
         input_sentence = str(input('input sentence: '))
         print('score: ', ngm.calculate_probability_of_sentence(tokenized_sentence=word_tokenizer(input_sentence)[0]))
     if task == 'pe':
