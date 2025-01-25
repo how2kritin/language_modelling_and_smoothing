@@ -1,76 +1,3 @@
-The Project Gutenberg eBook of Ulysses, by James Joyce
-
-This eBook is for the use of anyone anywhere in the United States and
-most other parts of the world at no cost and with almost no restrictions
-whatsoever. You may copy it, give it away or re-use it under the terms
-of the Project Gutenberg License included with this eBook or online at
-www.gutenberg.org. If you are not located in the United States, you
-will have to check the laws of the country where you are located before
-using this eBook.
-
-Title: Ulysses
-
-Author: James Joyce
-
-Release Date: December 27, 2001 [eBook #4300]
-[Most recently updated: December 27, 2019]
-
-Language: English
-
-Character set encoding: UTF-8
-
-Produced by: Col Choat and David Widger
-
-*** START OF THE PROJECT GUTENBERG EBOOK ULYSSES ***
-
-[Illustration]
-
-
-
-
-Ulysses
-
-
-by James Joyce
-
-
-Contents
-
- — I —
-
- [ 1 ]
- [ 2 ]
- [ 3 ]
-
- — II —
-
- [ 4 ]
- [ 5 ]
- [ 6 ]
- [ 7 ]
- [ 8 ]
- [ 9 ]
- [ 10 ]
- [ 11 ]
- [ 12 ]
- [ 13 ]
- [ 14 ]
- [ 15 ]
-
- — III —
-
- [ 16 ]
- [ 17 ]
- [ 18 ]
-
-
-
-
-— I —
-
-
-[ 1 ]
-
 Stately, plump Buck Mulligan came from the stairhead, bearing a bowl of
 lather on which a mirror and a razor lay crossed. A yellow
 dressinggown, ungirdled, was sustained gently behind him on the mild
@@ -1193,8 +1120,6 @@ Usurper.
 
 
 
-[ 2 ]
-
 
 —You, Cochrane, what city sent for him?
 
@@ -1865,7 +1790,6 @@ spangles, dancing coins.
 
 
 
-[ 3 ]
 
 
 Ineluctable modality of the visible: at least that if no more, thought
@@ -2498,11 +2422,6 @@ crosstrees, homing, upstream, silently moving, a silent ship.
 
 
 
-
-— II —
-
-
-[ 4 ]
 
 Mr Leopold Bloom ate with relish the inner organs of beasts and fowls.
 He liked thick giblet soup, nutty gizzards, a stuffed roast heart,
@@ -3244,10 +3163,6 @@ third.
 
 Poor Dignam!
 
-
-
-
-[ 5 ]
 
 
 By lorries along sir John Rogerson’s quay Mr Bloom walked soberly, past
@@ -3997,9 +3912,6 @@ his bush floating, floating hair of the stream around the limp father
 of thousands, a languid floating flower.
 
 
-
-
-[ 6 ]
 
 
 Martin Cunningham, first, poked his silkhatted head into the creaking
@@ -5461,9 +5373,6 @@ Get the pull over him that way.
 Thank you. How grand we are this morning!
 
 
-
-
-[ 7 ]
 
 
 IN THE HEART OF THE HIBERNIAN METROPOLIS
@@ -7166,9 +7075,6 @@ truth was known.
 
 
 
-[ 8 ]
-
-
 Pineapple rock, lemon platt, butter scotch. A sugarsticky girl
 shovelling scoopfuls of creams for a christian brother. Some school
 treat. Bad for their tummies. Lozenge and comfit manufacturer to His
@@ -8786,10 +8692,6 @@ Safe!
 
 
 
-
-[ 9 ]
-
-
 Urbane, to comfort them, the quaker librarian purred:
 
 —And we have, have we not, those priceless pages of _Wilhelm Meister_.
@@ -9501,7 +9403,6 @@ and there these nineteen hundred years sitteth on the right hand of His
 Own Self but yet shall come in the latter day to doom the quick and
 dead when all the quick shall be dead already.
 
-[Illustration]
 
 He lifts his hands. Veils fall. O, flowers! Bells with bells with bells
 aquiring.
@@ -10524,9 +10425,6 @@ from wide earth an altar.
      From our bless’d altars.
 
 
-
-
-[ 10 ]
 
 
 The superior, the very reverend John Conmee S. J. reset his smooth
@@ -12399,8 +12297,6 @@ door.
 
 
 
-
-[ 11 ]
 
 
 Bronze by gold heard the hoofirons, steelyringing.
@@ -14362,9 +14258,6 @@ Pprrpffrrppffff.
 _Done._
 
 
-
-
-[ 12 ]
 
 
 I was just passing the time of day with old Troy of the D. M. P. at the
@@ -16934,8 +16827,6 @@ over Donohoe’s in Little Green street like a shot off a shovel.
 
 
 
-[ 13 ]
-
 
 The summer evening had begun to fold the world in its mysterious
 embrace. Far away in the west the sun was setting and the last glow of
@@ -18447,9 +18338,6 @@ sitting on the rocks looking was
      Cuckoo.
 
 
-
-
-[ 14 ]
 
 
 Deshil Holles Eamus. Deshil Holles Eamus. Deshil Holles Eamus.
@@ -20198,8 +20086,6 @@ Just you try it on.
 
 
 
-
-[ 15 ]
 
 
 _(The Mabbot street entrance of nighttown, before which stretches an
@@ -25724,10 +25610,6 @@ pocket.)_
 
 
 
-— III —
-
-
-[ 16 ]
 
 Preparatory to anything else Mr Bloom brushed off the greater bulk of
 the shavings and handed Stephen the hat and ashplant and bucked him up
@@ -28020,9 +27902,6 @@ street _and looked after their lowbacked car_.
 
 
 
-[ 17 ]
-
-
 What parallel courses did Bloom and Stephen follow returning?
 
 Starting united both at normal walking pace from Beresford place they
@@ -29105,7 +28984,6 @@ Recite the first (major) part of this chanted legend.
      And the very second ball little Harry Hughes played
      He broke the jew’s windows all.
 
-[Illustration]
 
 How did the son of Rudolph receive this first part?
 
@@ -29134,7 +29012,6 @@ Recite the second part (minor) of the legend.
      And now he’ll play his ball no more
      For he lies among the dead.
 
-[Illustration]
 
 How did the father of Millicent receive this second part?
 
@@ -31136,8 +31013,6 @@ Where?
 
 
 
-
-[ 18 ]
 
 
 Yes because he never did a thing like that before as ask to get his

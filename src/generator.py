@@ -1,6 +1,8 @@
 from tokenizer import word_tokenizer
-from language_model import NGramModel, LinearInterpolationOfNGramModels, detokenize
+from language_model import detokenize
 import argparse
+from NGramModel import NGramModel
+from LinearInterpolation import LinearInterpolationOfNGramModels
 
 
 def main(N: int, lm_type: str, corpus_path: str, k: int, gen_type: str) -> None:
