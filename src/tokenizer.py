@@ -1,13 +1,8 @@
-import random
 import re
-# from nltk.tokenize import sent_tokenize
-# import nltk
-import spacy
 
 def cleanCorpus(text):
     text = text.replace('\n', ' ')
     text = re.sub(' +', ' ', text)
-    # text = re.sub("n\'t", " not", text)
     return text
 
 def splitSentence(text):
