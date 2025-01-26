@@ -102,7 +102,8 @@ $$P_{SGT} = (1 - \frac{N_1}{N}) \frac{P^{unnorm}_r}{\sum P^{unnorm}_r} \hspace{5
 
 This renormalized estimate is the _Simple Good-Turing_ (SGT) smoothing estimate. This is what we will be using here.
 
-**Note:** As can be seen in the renormalized probability above, the probability mass $\frac{N_1}{N}$ is reserved for
+> [!NOTE]
+> As can be seen in the renormalized probability above, the probability mass $\frac{N_1}{N}$ is reserved for
 unseen events, and hence, when predicting the next word, the probabilities of _ALL_ the predicted words will sum up
 to $1 - \frac{N_1}{N}$.
 
