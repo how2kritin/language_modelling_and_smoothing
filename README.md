@@ -1,10 +1,23 @@
 # Language Modelling and Smoothing
 
+N-Gram Language Models with Laplace and Good-Turing smoothing techniques, as well as Linear Interpolation of N-Gram
+models, implemented in Python using PyTorch. This corresponds to Assignment-1 of Introduction to Natural Language
+Processing at IIIT Hyderabad in the Spring'25 semester.
+
+### Information about the smoothing techniques used:
+1. [Laplace Smoothing](#laplace-smoothing)
+2. [Good-Turing Smoothing](#good-turing-smoothing)
+3. [Linear Interpolation](#linear-interpolation)
+
+---
+
 # Resources
 
 1. [Stanford NLP - Language Models lecture](https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1086/handouts/cs224n-lecture2-language-models-slides.pdf)
 2. [Simple Good-Turing Smoothing](https://www.d.umn.edu/~tpederse/Courses/CS8761-FALL02/Code/sgt-gale.pdf)
 3. [Linear Interpolation - TnT -- A Statistical Part-of-Speech Tagger](https://aclanthology.org/A00-1031.pdf)
+
+---
 
 # Pre-requisites
 
@@ -12,6 +25,10 @@
 2. A python package manager such as `pip` or `conda`.
 3. (OPTIONAL) `virtualenv` to create a virtual environment.
 4. All the python libraries mentioned in `requirements.txt`.
+
+---
+
+---
 
 # Tokenization
 
@@ -104,8 +121,8 @@ This renormalized estimate is the _Simple Good-Turing_ (SGT) smoothing estimate.
 
 > [!NOTE]
 > As can be seen in the renormalized probability above, the probability mass $\frac{N_1}{N}$ is reserved for
-unseen events, and hence, when predicting the next word, the probabilities of _ALL_ the predicted words will sum up
-to $1 - \frac{N_1}{N}$.
+> unseen events, and hence, when predicting the next word, the probabilities of _ALL_ the predicted words will sum up
+> to $1 - \frac{N_1}{N}$.
 
 ### Linear Interpolation
 
