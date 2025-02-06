@@ -8,41 +8,26 @@
 
 # Average Corpus Perplexity Scores - Analysis
 
-### LM1
-
-LM1 for N = 1 -> train = 414, test = 416  
-LM1 for N = 3 -> train = 1781, test = 3033  
-LM1 for N = 5 -> train = 2475, test = 4710
-
-### LM2
-
-LM2 for N = 1 -> train = 598, test = 689  
-LM2 for N = 3 -> train = 20, test = 70  
-LM2 for N = 5 -> train = 13, test = 50
-
-### LM3
-
-LM3 for N = 1 -> train = 413, test = 459  
-LM3 for N = 3 -> train = 11, test = 186  
-LM3 for N = 5 -> train = 7, test = 189
-
-### LM4
-
-LM4 for N = 1 -> train = 821, test = 1059  
-LM4 for N = 3 -> train = 8963, test = 15575  
-LM4 for N = 5 -> train = 11536, test = 21430
-
-### LM5
-
-LM5 for N = 1 -> train = 2200, test = 3676  
-LM5 for N = 3 -> train = 129, test = 235  
-LM5 for N = 5 -> train = 176, test = 298
-
-### LM6
-
-LM6 for N = 1 -> train = 832, test = 1299  
-LM6 for N = 3 -> train = 16, test = 955  
-LM6 for N = 5 -> train = 12, test = 962
+| Model | N | Dataset           | Smoothing            | Train | Test  |
+|-------|---|-------------------|----------------------|-------|-------|
+| LM1   | 1 | Pride & Prejudice | Laplace              | 414   | 416   |
+| LM1   | 3 | Pride & Prejudice | Laplace              | 1781  | 3033  |
+| LM1   | 5 | Pride & Prejudice | Laplace              | 2475  | 4710  |
+| LM2   | 1 | Pride & Prejudice | Good-Turing          | 598   | 689   |
+| LM2   | 3 | Pride & Prejudice | Good-Turing          | 20    | 70    |
+| LM2   | 5 | Pride & Prejudice | Good-Turing          | 13    | 50    |
+| LM3   | 1 | Pride & Prejudice | Linear Interpolation | 413   | 459   |
+| LM3   | 3 | Pride & Prejudice | Linear Interpolation | 11    | 186   |
+| LM3   | 5 | Pride & Prejudice | Linear Interpolation | 7     | 189   |
+| LM4   | 1 | Ulysses           | Laplace              | 821   | 1059  |
+| LM4   | 3 | Ulysses           | Laplace              | 8963  | 15575 |
+| LM4   | 5 | Ulysses           | Laplace              | 11536 | 21430 |
+| LM5   | 1 | Ulysses           | Good-Turing          | 2200  | 3676  |
+| LM5   | 3 | Ulysses           | Good-Turing          | 129   | 235   |
+| LM5   | 5 | Ulysses           | Good-Turing          | 176   | 298   |
+| LM6   | 1 | Ulysses           | Linear Interpolation | 832   | 1299  |
+| LM6   | 3 | Ulysses           | Linear Interpolation | 16    | 955   |
+| LM6   | 5 | Ulysses           | Linear Interpolation | 12    | 962   |
 
 ## Observations
 
