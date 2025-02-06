@@ -1,8 +1,8 @@
 # Language Modelling and Smoothing
 
 N-Gram Language Models with Laplace and Good-Turing smoothing techniques, as well as Linear Interpolation of N-Gram
-models, implemented in Python using PyTorch. This corresponds to Assignment-1 of Introduction to Natural Language
-Processing at IIIT Hyderabad in the Spring'25 semester.
+models, implemented in Python using PyTorch. This corresponds to Assignment-1 of the Introduction to Natural Language
+Processing course at IIIT Hyderabad, taken in the Spring'25 semester.
 
 ### Information about the smoothing techniques used:
 1. [Laplace Smoothing](#laplace-smoothing)
